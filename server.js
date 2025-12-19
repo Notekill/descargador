@@ -6,21 +6,35 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Ruta para obtener info (La que llama tu script.js)
+// Ruta para obtener información del video
 app.post('/api/info', async (req, res) => {
     try {
-        const info = await ytdl.getInfo(req.body.url);
+        const { url } = req.body;
+        if (!url) return res.status(400).json({ error: "URL requerida" });
+        
+        const info = await ytdl.getInfo(url);
         res.json({ title: info.videoDetails.title });
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error(error);
+        res.status(500).json({ error: "Error al obtener info" });
     }
 });
 
-// Ruta para descargar (La que dispara el navegador)
+// Ruta para la descarga directa
 app.get('/api/download', async (req, res) => {
-    const { url, format } = req.query;
-    res.setHeader('Content-Disposition', `attachment; filename="video.${format}"`);
-    ytdl(url, { format: format === 'mp3' ? 'highestaudio' : 'highest' }).pipe(res);
+    try {
+        const { url, format } = req.query;
+        if (!url) return res.status(400).send("URL requerida");
+
+        const options = format === 'mp3' 
+            ? { format: 'mp3', filter: 'audioonly', quality: 'highestaudio' }
+            : { format: 'mp4', quality: 'highestvideo' };
+
+        res.setHeader('Content-Disposition', `attachment; filename="video.${format}"`);
+        ytdl(url, options).pipe(res);
+    } catch (error) {
+        res.status(500).send("Error en la descarga");
+    }
 });
 
-module.exports = app; // Necesario para Vercel
+module.exports = app;
