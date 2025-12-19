@@ -1,49 +1,43 @@
+const urlInput = document.getElementById('urlInput');
+const statusMessage = document.getElementById('statusMessage');
+let selectedFormat = 'mp3';
+
+function setFormat(format) {
+    selectedFormat = format;
+    console.log("Formato:", format);
+}
+
 async function iniciarDescarga() {
     const url = urlInput.value.trim();
-    if (!url) {
-        alert("Por favor, pega un link de YouTube");
-        return;
-    }
+    if (!url) return alert("Pega un link de YouTube");
 
-    statusMessage.textContent = "Conectando con el servidor...";
+    statusMessage.textContent = "Procesando con Proxy...";
     statusMessage.className = "status-bar info";
     statusMessage.classList.remove('hidden');
 
     try {
-        console.log("Enviando petición para:", url);
-       
-const infoRes = await fetch('/api/info', {
+        const res = await fetch('/api/info', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url })
+            body: JSON.stringify({ url })
         });
-// Este es el truco final en script.js
-const enlaceDescarga = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
-const tempLink = document.createElement('a');
-tempLink.href = enlaceDescarga;
-tempLink.setAttribute('download', ''); 
-document.body.appendChild(tempLink);
-tempLink.click();
-        const data = await infoRes.json();
 
-        if (infoRes.ok) {
-            statusMessage.textContent = `Preparando: ${data.title}`;
-            statusMessage.className = "status-bar success";
-            
-            // Redirección directa para descargar
-            const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
-            window.location.href = downloadUrl;
-        } else {
-            throw new Error(data.error || "Error en el servidor");
-        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        statusMessage.textContent = "¡Listo! Iniciando descarga...";
+        
+        // DISPARO DE DESCARGA (Evita bloqueos del navegador)
+        const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = ""; 
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
     } catch (e) {
-        console.error("Error detallado:", e);
-        statusMessage.textContent = "Error: El servidor no responde. Revisa los logs de Render.";
+        statusMessage.textContent = "Error: " + e.message;
         statusMessage.className = "status-bar error";
     }
 }
-
-
-
-
-
