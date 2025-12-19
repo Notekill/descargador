@@ -24,6 +24,22 @@ const getOptions = () => {
     if (fs.existsSync(cookiePath)) {
         const raw = JSON.parse(fs.readFileSync(cookiePath, 'utf8'));
         cookies = raw.map(c => `${c.name}=${c.value}`).join('; ');
+const opciones = {
+    quality: isMp3 ? 'highestaudio' : 'highest',
+    filter: isMp3 ? 'audioonly' : 'videoandaudio',
+    requestOptions: {
+        headers: {
+            'User-Agent': obtenerIdentidadHumana(),
+            'Accept': '*/*',
+            'Accept-Language': 'es-ES,es;q=0.9',
+            'Referer': 'https://www.youtube.com/',
+            'Origin': 'https://www.youtube.com/'
+        }
+    }
+};
+
+ytdl(url, opciones).pipe(res);
+        
     }
     
     return {
