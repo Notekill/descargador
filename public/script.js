@@ -1,49 +1,37 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const downloadBtn = document.getElementById('downloadBtn');
-    const urlInput = document.getElementById('urlInput');
-    const statusMessage = document.getElementById('statusMessage');
-    const formatSpans = document.querySelectorAll('.pill-switch span');
-
-    let selectedFormat = 'mp3';
-
-    formatSpans.forEach(span => {
-        span.addEventListener('click', () => {
-            formatSpans.forEach(s => s.classList.remove('active'));
-            span.classList.add('active');
-            selectedFormat = span.textContent.trim().toLowerCase();
-        });
-    });
-
-    async function iniciarDescarga() {
-        const url = urlInput.value.trim();
-        if (!url) return alert("Pega un link de YouTube");
-
-        statusMessage.textContent = "Conectando con el servidor...";
-        statusMessage.className = "status-bar info";
-        statusMessage.classList.remove('hidden');
-
-        try {
-            const infoRes = await fetch('/api/info', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-
-            if (infoRes.ok) {
-                const data = await infoRes.json();
-                statusMessage.textContent = `Descargando: ${data.title}`;
-                statusMessage.className = "status-bar success";
-
-                // Dispara la descarga usando la ruta de la API
-                window.location.href = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
-            } else {
-                throw new Error();
-            }
-        } catch (e) {
-            statusMessage.textContent = "Error al procesar el video. Intenta con otro link.";
-            statusMessage.className = "status-bar error";
-        }
+async function iniciarDescarga() {
+    const url = urlInput.value.trim();
+    if (!url) {
+        alert("Por favor, pega un link de YouTube");
+        return;
     }
 
-    downloadBtn.addEventListener('click', iniciarDescarga);
-});
+    statusMessage.textContent = "Conectando con el servidor...";
+    statusMessage.className = "status-bar info";
+    statusMessage.classList.remove('hidden');
+
+    try {
+        console.log("Enviando petición para:", url);
+        const infoRes = await fetch('/api/info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+        });
+
+        const data = await infoRes.json();
+
+        if (infoRes.ok) {
+            statusMessage.textContent = `Preparando: ${data.title}`;
+            statusMessage.className = "status-bar success";
+            
+            // Redirección directa para descargar
+            const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
+            window.location.href = downloadUrl;
+        } else {
+            throw new Error(data.error || "Error en el servidor");
+        }
+    } catch (e) {
+        console.error("Error detallado:", e);
+        statusMessage.textContent = "Error: El servidor no responde. Revisa los logs de Vercel.";
+        statusMessage.className = "status-bar error";
+    }
+}
