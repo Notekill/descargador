@@ -1,11 +1,15 @@
 {
-  "name": "descargador-web",
+  "name": "yutub-downloader",
   "version": "1.0.0",
   "main": "server.js",
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "@distube/ytdl-core": "latest"
+  },
+  "scripts": {
+    "start": "node server.js"
   }
 }
+
 
