@@ -32,10 +32,11 @@ const infoRes = await fetch('/api/info', {
         }
     } catch (e) {
         console.error("Error detallado:", e);
-        statusMessage.textContent = "Error: El servidor no responde. Revisa los logs de Vercel.";
+        statusMessage.textContent = "Error: El servidor no responde. Revisa los logs de Render.";
         statusMessage.className = "status-bar error";
     }
 }
+
 
 
 
