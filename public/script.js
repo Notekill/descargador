@@ -17,7 +17,13 @@ const infoRes = await fetch('/api/info', {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: url })
         });
-
+// Este es el truco final en script.js
+const enlaceDescarga = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
+const tempLink = document.createElement('a');
+tempLink.href = enlaceDescarga;
+tempLink.setAttribute('download', ''); 
+document.body.appendChild(tempLink);
+tempLink.click();
         const data = await infoRes.json();
 
         if (infoRes.ok) {
@@ -36,6 +42,7 @@ const infoRes = await fetch('/api/info', {
         statusMessage.className = "status-bar error";
     }
 }
+
 
 
 
