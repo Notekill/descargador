@@ -6,10 +6,9 @@ const path = require('path');
 
 const app = express();
 
-// Configuración básica
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public')); // Esto sirve tu carpeta public automáticamente
+app.use(express.static('public'));
 
 // --- MANEJO DE COOKIES ---
 const cookiePath = path.join(__dirname, 'cookies.json');
@@ -18,23 +17,18 @@ let youtubeCookies = [];
 if (fs.existsSync(cookiePath)) {
     try {
         const rawCookies = JSON.parse(fs.readFileSync(cookiePath, 'utf8'));
-        // Convertimos el JSON de cookies al formato de texto que entiende ytdl
         youtubeCookies = rawCookies.map(c => `${c.name}=${c.value}`).join('; ');
         console.log("✅ Cookies cargadas correctamente.");
     } catch (err) {
         console.error("❌ Error al leer cookies.json:", err);
     }
-} else {
-    console.warn("⚠️ No se encontró cookies.json. YouTube podría bloquear la descarga.");
 }
 
-// --- RUTA 1: OBTENER INFO DEL VÍDEO ---
+// --- RUTA 1: OBTENER INFO ---
 app.post('/api/info', async (req, res) => {
     try {
         const { url } = req.body;
         if (!url) return res.status(400).json({ error: "Falta la URL" });
-
-        console.log("Obteniendo info de:", url);
 
         const info = await ytdl.getInfo(url, {
             requestOptions: {
@@ -51,11 +45,11 @@ app.post('/api/info', async (req, res) => {
         });
     } catch (error) {
         console.error("Error en /api/info:", error.message);
-        res.status(500).json({ error: "YouTube bloqueó la petición. Actualiza las cookies." });
+        res.status(500).json({ error: "YouTube bloqueó la petición o URL inválida." });
     }
 });
 
-// --- RUTA 2: DESCARGAR ---
+// --- RUTA 2: DESCARGAR (ACTUALIZADA) ---
 app.get('/api/download', async (req, res) => {
     try {
         const { url, format } = req.query;
@@ -63,8 +57,10 @@ app.get('/api/download', async (req, res) => {
 
         const isMp3 = format === 'mp3';
         
-        // Configuramos las cabeceras de respuesta para el navegador
-        res.setHeader('Content-Disposition', `attachment; filename="archivo.${format}"`);
+        // Cabeceras mejoradas para forzar la descarga en el navegador
+        res.setHeader('Content-Type', isMp3 ? 'audio/mpeg' : 'video/mp4');
+        res.setHeader('Content-Disposition', `attachment; filename="descarga_${Date.now()}.${format}"`);
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
         ytdl(url, {
             quality: isMp3 ? 'highestaudio' : 'highest',
@@ -79,12 +75,13 @@ app.get('/api/download', async (req, res) => {
 
     } catch (error) {
         console.error("Error en /api/download:", error.message);
-        res.status(500).send("Error al procesar la descarga.");
+        if (!res.headersSent) {
+            res.status(500).send("Error al procesar la descarga.");
+        }
     }
 });
 
-// --- INICIO DEL SERVIDOR ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor funcionando en http://localhost:${PORT}`);
+    console.log(`🚀 Servidor funcionando en puerto ${PORT}`);
 });
