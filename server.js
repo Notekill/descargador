@@ -66,3 +66,9 @@ app.get('/api/download', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+// ... (asegúrate de que arriba de esto NO haya otro app.listen)
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor funcionando correctamente en el puerto ${PORT}`);
+});
