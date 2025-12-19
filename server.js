@@ -7,6 +7,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+// Configuración de cabeceras para evitar bloqueos de YouTube
 const requestOptions = {
     headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -15,60 +16,45 @@ const requestOptions = {
     }
 };
 
+// Ruta para obtener información del video
 app.post('/api/info', async (req, res) => {
     try {
-        const info = await ytdl.getInfo(req.body.url, { requestOptions });
+        const { url } = req.body;
+        if (!url) return res.status(400).json({ error: "URL requerida" });
+
+        const info = await ytdl.getInfo(url, { requestOptions });
         res.json({ title: info.videoDetails.title });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al obtener info" });
+        console.error("Error Info:", error.message);
+        res.status(500).json({ error: "No se pudo obtener la info del video" });
     }
 });
 
+// Ruta para la descarga física del archivo
 app.get('/api/download', async (req, res) => {
     try {
         const { url, format } = req.query;
-        res.setHeader('Content-Disposition', `attachment; filename="archivo.${format}"`);
+        if (!url) return res.status(400).send("URL requerida");
+
+        const isMp3 = format === 'mp3';
+        
+        res.setHeader('Content-Disposition', `attachment; filename="download.${format}"`);
+        res.setHeader('Content-Type', isMp3 ? 'audio/mpeg' : 'video/mp4');
+
         ytdl(url, {
-            quality: format === 'mp3' ? 'highestaudio' : 'highest',
-            filter: format === 'mp3' ? 'audioonly' : 'videoandaudio',
+            quality: isMp3 ? 'highestaudio' : 'highest',
+            filter: isMp3 ? 'audioonly' : 'videoandaudio',
             requestOptions
         }).pipe(res);
+
     } catch (error) {
-        if (!res.headersSent) res.status(500).send("Error de descarga");
+        console.error("Error Download:", error.message);
+        if (!res.headersSent) res.status(500).send("Error en la descarga");
     }
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Servidor listo en puerto ${PORT}`));
-
-app.post('/api/info', async (req, res) => {
-    try {
-        const info = await ytdl.getInfo(req.body.url, getOptions());
-        res.json({ title: info.videoDetails.title });
-    } catch (error) {
-        res.status(500).json({ error: "YouTube bloqueó la IP de Render. Intenta de nuevo." });
-    }
-});
-
-app.get('/api/download', async (req, res) => {
-    try {
-        const { url, format } = req.query;
-        res.setHeader('Content-Disposition', `attachment; filename="video.${format}"`);
-        ytdl(url, {
-            quality: format === 'mp3' ? 'highestaudio' : 'highest',
-            filter: format === 'mp3' ? 'audioonly' : 'videoandaudio',
-            ...getOptions()
-        }).pipe(res);
-    } catch (error) {
-        if (!res.headersSent) res.status(500).send("Error en descarga");
-    }
-});
-
-app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
-// ... (asegúrate de que arriba de esto NO haya otro app.listen)
-
+// ÚNICO punto de encendido del servidor
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor funcionando correctamente en el puerto ${PORT}`);
+    console.log(`🚀 Servidor funcionando en puerto ${PORT}`);
 });
