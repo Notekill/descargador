@@ -4,6 +4,7 @@ let selectedFormat = 'mp3';
 
 function setFormat(format) {
     selectedFormat = format;
+    console.log("Formato:", format);
 }
 
 async function iniciarDescarga() {
@@ -24,7 +25,6 @@ async function iniciarDescarga() {
         if (res.ok) {
             statusMessage.textContent = "¡Descarga iniciada!";
             statusMessage.className = "status-bar success";
-            // Redirección directa para forzar la descarga en el navegador
             window.location.href = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
         } else {
             throw new Error("Error en el servidor");
