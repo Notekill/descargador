@@ -11,7 +11,8 @@ async function iniciarDescarga() {
 
     try {
         console.log("Enviando petición para:", url);
-        const infoRes = await fetch('api/info', {
+       
+const infoRes = await fetch('/api/info', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: url })
@@ -35,5 +36,6 @@ async function iniciarDescarga() {
         statusMessage.className = "status-bar error";
     }
 }
+
 
 
