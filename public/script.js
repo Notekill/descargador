@@ -4,13 +4,17 @@ let selectedFormat = 'mp3';
 
 function setFormat(format) {
     selectedFormat = format;
+    console.log("Formato cambiado a:", format);
 }
 
 async function iniciarDescarga() {
     const url = urlInput.value.trim();
-    if (!url) return alert("Pega un link");
+    if (!url) {
+        alert("Por favor, pega un link de YouTube");
+        return;
+    }
 
-    statusMessage.textContent = "Analizando...";
+    statusMessage.textContent = "Procesando...";
     statusMessage.className = "status-bar info";
     statusMessage.classList.remove('hidden');
 
@@ -20,17 +24,19 @@ async function iniciarDescarga() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url })
         });
-        
+
         if (res.ok) {
-            statusMessage.textContent = "¡Descarga iniciada!";
+            statusMessage.textContent = "¡Iniciando descarga!";
             statusMessage.className = "status-bar success";
+            
+            // Redirección directa para que el navegador descargue el archivo
             window.location.href = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
         } else {
-            throw new Error("Error en el servidor");
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Error en el servidor");
         }
     } catch (e) {
         statusMessage.textContent = "Error: " + e.message;
         statusMessage.className = "status-bar error";
     }
 }
-
