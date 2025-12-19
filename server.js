@@ -1,47 +1,54 @@
 const express = require('express');
 const cors = require('cors');
 const ytdl = require('@distube/ytdl-core');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Agente de usuario real para evitar bloqueos básicos
-const agentOptions = {
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+// Función para transformar cookies al formato que entiende ytdl
+function getYoutubeCookies() {
+    const cookiePath = path.join(process.cwd(), 'cookies.json');
+    if (fs.existsSync(cookiePath)) {
+        return JSON.parse(fs.readFileSync(cookiePath, 'utf8'));
     }
-};
+    return [];
+}
 
 app.post('/api/info', async (req, res) => {
     try {
         const { url } = req.body;
-        if (!url) return res.status(400).json({ error: "URL requerida" });
-        
-        // Intentamos obtener la info con el agente de usuario
-        const info = await ytdl.getInfo(url, { requestOptions: agentOptions });
+        const info = await ytdl.getInfo(url, {
+            requestOptions: {
+                headers: {
+                    cookie: getYoutubeCookies().map(c => `${c.name}=${c.value}`).join('; ')
+                }
+            }
+        });
         res.json({ title: info.videoDetails.title });
     } catch (error) {
-        console.error('Error en info:', error.message);
-        res.status(500).json({ error: "YouTube bloqueó la petición. Intenta con otro video corto." });
+        console.error(error);
+        res.status(500).json({ error: "Error de YouTube. Intenta de nuevo." });
     }
 });
 
 app.get('/api/download', async (req, res) => {
     try {
         const { url, format } = req.query;
-        if (!url) return res.status(400).send("URL requerida");
-
-        const options = format === 'mp3' 
-            ? { filter: 'audioonly', quality: 'highestaudio', requestOptions: agentOptions }
-            : { quality: 'highest', requestOptions: agentOptions };
-
-        res.setHeader('Content-Disposition', `attachment; filename="descarga.${format}"`);
-        ytdl(url, options).pipe(res);
+        res.setHeader('Content-Disposition', `attachment; filename="video.${format}"`);
+        
+        ytdl(url, {
+            format: format === 'mp3' ? 'highestaudio' : 'highest',
+            filter: format === 'mp3' ? 'audioonly' : 'videoandaudio',
+            requestOptions: {
+                headers: {
+                    cookie: getYoutubeCookies().map(c => `${c.name}=${c.value}`).join('; ')
+                }
+            }
+        }).pipe(res);
     } catch (error) {
-        console.error('Error en descarga:', error.message);
         res.status(500).send("Error en la descarga");
     }
 });
