@@ -6,40 +6,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Endpoint para obtener la miniatura y título
+// Ruta para obtener info (La que llama tu script.js)
 app.post('/api/info', async (req, res) => {
     try {
-        const { url } = req.body;
-        if (!ytdl.validateURL(url)) return res.status(400).json({ error: 'URL no válida' });
-        const info = await ytdl.getInfo(url);
-        res.json({
-            title: info.videoDetails.title,
-            thumbnail: info.videoDetails.thumbnails[0].url
-        });
-    } catch (e) {
-        res.status(500).json({ error: 'Error al conectar con YouTube' });
+        const info = await ytdl.getInfo(req.body.url);
+        res.json({ title: info.videoDetails.title });
+    } catch (error) {
+        res.status(500).send(error.message);
     }
 });
 
-// Endpoint que activa la descarga en el navegador
+// Ruta para descargar (La que dispara el navegador)
 app.get('/api/download', async (req, res) => {
-    try {
-        const { url, format } = req.query;
-        const info = await ytdl.getInfo(url);
-        const title = info.videoDetails.title.replace(/[^\x00-\x7F]/g, ""); 
-        
-        const contentType = format === 'mp3' ? 'audio/mpeg' : 'video/mp4';
-        res.header('Content-Disposition', `attachment; filename="${title}.${format}"`);
-        res.header('Content-Type', contentType);
-
-        ytdl(url, { 
-            format: format, 
-            filter: format === 'mp3' ? 'audioonly' : 'audioandvideo', 
-            quality: 'highest' 
-        }).pipe(res);
-    } catch (e) {
-        res.status(500).send('Error en la descarga');
-    }
+    const { url, format } = req.query;
+    res.setHeader('Content-Disposition', `attachment; filename="video.${format}"`);
+    ytdl(url, { format: format === 'mp3' ? 'highestaudio' : 'highest' }).pipe(res);
 });
 
-module.exports = app;
+module.exports = app; // Necesario para Vercel
