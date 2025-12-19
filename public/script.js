@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedFormat = 'mp3';
 
-    // Selección de formato (MP3 o MP4)
     formatSpans.forEach(span => {
         span.addEventListener('click', () => {
             formatSpans.forEach(s => s.classList.remove('active'));
@@ -19,13 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = urlInput.value.trim();
         if (!url) return alert("Pega un link de YouTube");
 
-        // Cambiamos el mensaje de "Error de conexión" por uno de carga
         statusMessage.textContent = "Conectando con el servidor...";
         statusMessage.className = "status-bar info";
         statusMessage.classList.remove('hidden');
 
         try {
-            // 1. Pedir info del video
             const infoRes = await fetch('/api/info', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -37,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusMessage.textContent = `Descargando: ${data.title}`;
                 statusMessage.className = "status-bar success";
 
-                // 2. DISPARAR DESCARGA AL NAVEGADOR
+                // Dispara la descarga usando la ruta de la API
                 window.location.href = `/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
             } else {
                 throw new Error();
